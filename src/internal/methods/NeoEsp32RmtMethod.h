@@ -561,7 +561,7 @@ public:
         }
 
         rmt_tx_event_callbacks_t callbacks = {};
-        callbacks.on_trans_done = NeoEsp32RmtTransDoneCallback<T_SPEED, T_CHANNEL>;
+        callbacks.on_trans_done = NeoEsp32RmtTransDoneCallbackWrapper::callback<NeoEsp32RmtMethodBase<T_SPEED, T_CHANNEL>>;
         err = rmt_tx_register_event_callbacks(_channel.getHandle(), &callbacks, this);
         if (err != ESP_OK)
         {
@@ -623,15 +623,18 @@ public:
     }
 
 private:
-    template<typename T>
-    static bool IRAM_ATTR NeoEsp32RmtTransDoneCallback(rmt_channel_t* channel, const rmt_tx_done_event_data_t* edata, void* user_data)
+    struct NeoEsp32RmtTransDoneCallbackWrapper
     {
-        (void)channel;
-        (void)edata;
-        auto* instance = static_cast<NeoEsp32RmtMethodBase<T, T_CHANNEL>*>(user_data);
-        instance->markTransmitDone();
-        return true;
-    }
+        template<typename T>
+        static bool IRAM_ATTR callback(rmt_channel_t* channel, const rmt_tx_done_event_data_t* edata, void* user_data)
+        {
+            (void)channel;
+            (void)edata;
+            auto* instance = static_cast<T*>(user_data);
+            instance->markTransmitDone();
+            return true;
+        }
+    };
 
     const size_t  _sizeData;
     const uint8_t _pin;
