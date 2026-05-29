@@ -55,6 +55,14 @@ extern "C"
 #define NEOPIXELBUS_RMT_INT_FLAGS (ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1)
 #endif
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#define NEOPIXELBUS_RMT_NEW_API 1
+#include <driver/rmt_tx.h>
+#include <driver/rmt_common.h>
+#else
+#define NEOPIXELBUS_RMT_NEW_API 0
+#endif
+
 class NeoEsp32RmtSpeed
 {
 public:
@@ -478,6 +486,8 @@ public:
         size_t* item_num);
 };
 
+#if !NEOPIXELBUS_RMT_NEW_API
+
 class NeoEsp32RmtChannel0
 {
 public:
@@ -546,7 +556,6 @@ public:
 
 #endif
 
-// dynamic channel support
 class NeoEsp32RmtChannelN
 {
 public:
@@ -558,6 +567,147 @@ public:
 
     const rmt_channel_t RmtChannelNumber;
 };
+
+#else // NEOPIXELBUS_RMT_NEW_API
+
+class NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannelBase() :
+        _channelHandle(nullptr)
+    {
+    }
+
+    rmt_channel_handle_t getHandle() const
+    {
+        return _channelHandle;
+    }
+
+    void setHandle(rmt_channel_handle_t handle)
+    {
+        _channelHandle = handle;
+    }
+
+protected:
+    rmt_channel_handle_t _channelHandle;
+};
+
+class NeoEsp32RmtChannel0 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel0() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_0)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel1 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel1() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_1)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel2 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel2() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_2)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel3 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel3() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_3)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+
+class NeoEsp32RmtChannel4 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel4() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_4)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel5 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel5() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_5)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel6 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel6() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_6)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+class NeoEsp32RmtChannel7 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel7() :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(RMT_CHANNEL_7)
+    {
+    }
+
+    const rmt_channel_t _channelNumber;
+};
+
+#endif
+
+class NeoEsp32RmtChannelN : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannelN(NeoBusChannel channel) :
+        NeoEsp32RmtChannelBase(),
+        _channelNumber(static_cast<rmt_channel_t>(channel))
+    {
+    }
+    NeoEsp32RmtChannelN() = delete;
+
+    const rmt_channel_t _channelNumber;
+};
+
+#endif // NEOPIXELBUS_RMT_NEW_API
+
+#if !NEOPIXELBUS_RMT_NEW_API
 
 template<typename T_SPEED, typename T_CHANNEL> class NeoEsp32RmtMethodBase
 {
@@ -579,15 +729,10 @@ public:
 
     ~NeoEsp32RmtMethodBase()
     {
-        // wait until the last send finishes before destructing everything
-        // arbitrary time out of 10 seconds
         ESP_ERROR_CHECK_WITHOUT_ABORT(rmt_wait_tx_done(_channel.RmtChannelNumber, 10000 / portTICK_PERIOD_MS));
-
         ESP_ERROR_CHECK(rmt_driver_uninstall(_channel.RmtChannelNumber));
-
         gpio_matrix_out(_pin, SIG_GPIO_OUT_IDX, false, false);
         pinMode(_pin, INPUT);
-
         free(_dataEditing);
         free(_dataSending);
     }
@@ -620,7 +765,7 @@ public:
         config.gpio_num = static_cast<gpio_num_t>(_pin);
         config.mem_block_num = 1;
         config.tx_config.loop_en = false;
-        
+
         config.tx_config.idle_output_en = true;
         config.tx_config.idle_level = T_SPEED::IdleLevel;
 
@@ -637,30 +782,21 @@ public:
 
     void Update(bool maintainBufferConsistency)
     {
-        // wait for not actively sending data
-        // this will time out at 10 seconds, an arbitrarily long period of time
-        // and do nothing if this happens
         if (ESP_OK == ESP_ERROR_CHECK_WITHOUT_ABORT(rmt_wait_tx_done(_channel.RmtChannelNumber, 10000 / portTICK_PERIOD_MS)))
         {
-            // now start the RMT transmit with the editing buffer before we swap
             ESP_ERROR_CHECK_WITHOUT_ABORT(rmt_write_sample(_channel.RmtChannelNumber, _dataEditing, _sizeData, false));
 
             if (maintainBufferConsistency)
             {
-                // copy editing to sending,
-                // this maintains the contract that "colors present before will
-                // be the same after", otherwise GetPixelColor will be inconsistent
                 memcpy(_dataSending, _dataEditing, _sizeData);
             }
 
-            // swap so the user can modify without affecting the async operation
             std::swap(_dataSending, _dataEditing);
         }
     }
 
     bool AlwaysUpdate()
     {
-        // this method requires update to be called only if changes to buffer
         return false;
     }
 
@@ -685,14 +821,223 @@ public:
     }
 
 private:
-    const size_t  _sizeData;      // Size of '_data*' buffers 
-    const uint8_t _pin;            // output pin number
-    const T_CHANNEL _channel; // holds instance for multi channel support
+    const size_t  _sizeData;
+    const uint8_t _pin;
+    const T_CHANNEL _channel;
 
-    // Holds data stream which include LED color values and other settings as needed
-    uint8_t*  _dataEditing;   // exposed for get and set
-    uint8_t*  _dataSending;   // used for async send using RMT
+    uint8_t*  _dataEditing;
+    uint8_t*  _dataSending;
 };
+
+#else // NEOPIXELBUS_RMT_NEW_API
+
+template<typename T_SPEED, typename T_CHANNEL> class NeoEsp32RmtMethodBase
+{
+public:
+    typedef NeoNoSettings SettingsObject;
+
+    NeoEsp32RmtMethodBase(uint8_t pin, uint16_t pixelCount, size_t elementSize, size_t settingsSize)  :
+        _sizeData(pixelCount * elementSize + settingsSize),
+        _pin(pin),
+        _channel(),
+        _isTransmitting(false),
+        _dataEditing(nullptr),
+        _dataSending(nullptr),
+        _rmtItems(nullptr),
+        _rmtItemsSize(0)
+    {
+    }
+
+    NeoEsp32RmtMethodBase(uint8_t pin, uint16_t pixelCount, size_t elementSize, size_t settingsSize, NeoBusChannel channel) :
+        _sizeData(pixelCount* elementSize + settingsSize),
+        _pin(pin),
+        _channel(channel),
+        _isTransmitting(false),
+        _dataEditing(nullptr),
+        _dataSending(nullptr),
+        _rmtItems(nullptr),
+        _rmtItemsSize(0)
+    {
+    }
+
+    ~NeoEsp32RmtMethodBase()
+    {
+        if (_channel.getHandle())
+        {
+            ESP_ERROR_CHECK_WITHOUT_ABORT(rmt_tx_wait_all_done(_channel.getHandle(), 10000 / portTICK_PERIOD_MS));
+            ESP_ERROR_CHECK(rmt_del_channel(_channel.getHandle()));
+        }
+
+        gpio_matrix_out(_pin, SIG_GPIO_OUT_IDX, false, false);
+        pinMode(_pin, INPUT);
+
+        free(_dataEditing);
+        free(_dataSending);
+        free(_rmtItems);
+    }
+
+    bool IsReadyToUpdate() const
+    {
+        return !_isTransmitting;
+    }
+
+    bool Initialize()
+    {
+        _dataEditing = static_cast<uint8_t*>(malloc(_sizeData));
+        if (!_dataEditing)
+        {
+            return false;
+        }
+
+        _dataSending = static_cast<uint8_t*>(malloc(_sizeData));
+        if (!_dataSending)
+        {
+            free(_dataEditing);
+            _dataEditing = nullptr;
+            return false;
+        }
+
+        _rmtItemsSize = _sizeData * 8 + 4;
+        _rmtItems = static_cast<rmt_item32_t*>(malloc(_rmtItemsSize * sizeof(rmt_item32_t)));
+        if (!_rmtItems)
+        {
+            free(_dataEditing);
+            free(_dataSending);
+            _dataEditing = nullptr;
+            _dataSending = nullptr;
+            return false;
+        }
+
+        rmt_tx_channel_config_t tx_config = {};
+        tx_config.gpio_num = static_cast<gpio_num_t>(_pin);
+        tx_config.clk_div = T_SPEED::RmtClockDivider;
+        tx_config.mem_block_symbols = 64;
+        tx_config.trans_queue_depth = 1;
+        tx_config.idle_level = (rmt_idle_level_t)T_SPEED::IdleLevel;
+
+        rmt_channel_handle_t handle;
+        esp_err_t err = rmt_new_tx_channel(&tx_config, &handle);
+        if (err != ESP_OK)
+        {
+            free(_dataEditing);
+            free(_dataSending);
+            free(_rmtItems);
+            _dataEditing = nullptr;
+            _dataSending = nullptr;
+            _rmtItems = nullptr;
+            return false;
+        }
+        _channel.setHandle(handle);
+
+        rmt_tx_callback_config_t callback_config = {};
+        callback_config.on_trans_done = NeoEsp32RmtTransDoneCallback<T_SPEED>;
+        err = rmt_tx_register_event_callbacks(_channel.getHandle(), &callback_config, this);
+        if (err != ESP_OK)
+        {
+            ESP_ERROR_CHECK(rmt_del_channel(_channel.getHandle()));
+            _channel.setHandle(nullptr);
+            free(_dataEditing);
+            free(_dataSending);
+            free(_rmtItems);
+            _dataEditing = nullptr;
+            _dataSending = nullptr;
+            _rmtItems = nullptr;
+            return false;
+        }
+
+        ESP_ERROR_CHECK(rmt_enable(_channel.getHandle()));
+
+        return true;
+    }
+
+    void Update(bool maintainBufferConsistency)
+    {
+        if (_isTransmitting)
+        {
+            return;
+        }
+
+        if (maintainBufferConsistency)
+        {
+            memcpy(_dataSending, _dataEditing, _sizeData);
+        }
+
+        size_t translated_size = 0;
+        size_t item_num = 0;
+
+        T_SPEED::Translate(_dataEditing,
+            _rmtItems,
+            _sizeData,
+            _rmtItemsSize,
+            &translated_size,
+            &item_num,
+            T_SPEED::RmtBit0,
+            T_SPEED::RmtBit1,
+            T_SPEED::RmtDurationReset);
+
+        rmt_transmit_config_t transmit_config = {};
+        transmit_config.loop_count = 0;
+
+        _isTransmitting = true;
+
+        ESP_ERROR_CHECK(rmt_transmit(_channel.getHandle(), _rmtItems, item_num * sizeof(rmt_item32_t), &transmit_config));
+
+        std::swap(_dataSending, _dataEditing);
+    }
+
+    bool AlwaysUpdate()
+    {
+        return false;
+    }
+
+    bool SwapBuffers()
+    {
+        std::swap(_dataSending, _dataEditing);
+        return true;
+    }
+
+    uint8_t* getData() const
+    {
+        return _dataEditing;
+    };
+
+    size_t getDataSize() const
+    {
+        return _sizeData;
+    }
+
+    void applySettings([[maybe_unused]] const SettingsObject& settings)
+    {
+    }
+
+    void IRAM_ATTR markTransmitDone()
+    {
+        _isTransmitting = false;
+    }
+
+private:
+    template<typename T>
+    static bool IRAM_ATTR NeoEsp32RmtTransDoneCallback(rmt_channel_handle_t channel, const rmt_tx_done_event_data_t* edata, void* user_data)
+    {
+        (void)channel;
+        (void)edata;
+        auto* instance = static_cast<NeoEsp32RmtMethodBase<T, T_CHANNEL>*>(user_data);
+        instance->markTransmitDone();
+        return true;
+    }
+
+    const size_t  _sizeData;
+    const uint8_t _pin;
+    T_CHANNEL _channel;
+    volatile bool _isTransmitting;
+
+    uint8_t*  _dataEditing;
+    uint8_t*  _dataSending;
+    rmt_item32_t* _rmtItems;
+    size_t _rmtItemsSize;
+};
+
+#endif // NEOPIXELBUS_RMT_NEW_API
 
 // normal
 typedef NeoEsp32RmtMethodBase<NeoEsp32RmtSpeedWs2811, NeoEsp32RmtChannelN> NeoEsp32RmtNWs2811Method;
