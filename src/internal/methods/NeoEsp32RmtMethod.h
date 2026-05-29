@@ -120,9 +120,9 @@ NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedWs2811, NeoEsp32RmtInvertedSpe
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedWs2812x, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 300000)
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedWs2805, NeoEsp32RmtInvertedSpeedBase, 300, 790, 790, 300, 300000)
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedSk6812, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 80000)
-NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1814, NeoEsp32RmtSpeedBase, 360, 890, 720, 530, 200000)
-NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1829, NeoEsp32RmtSpeedBase, 300, 900, 800, 400, 200000)
-NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1914, NeoEsp32RmtSpeedBase, 360, 890, 720, 530, 200000)
+NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1814, NeoEsp32RmtInvertedSpeedBase, 360, 890, 720, 530, 200000)
+NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1829, NeoEsp32RmtInvertedSpeedBase, 300, 900, 800, 400, 200000)
+NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedTm1914, NeoEsp32RmtInvertedSpeedBase, 360, 890, 720, 530, 200000)
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeed800Kbps, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 50000)
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeed400Kbps, NeoEsp32RmtInvertedSpeedBase, 800, 1700, 1600, 900, 50000)
 NEOPIXELBUS_DECLARE_SPEED(NeoEsp32RmtInvertedSpeedApa106, NeoEsp32RmtInvertedSpeedBase, 350, 1350, 1350, 350, 50000)
@@ -358,9 +358,9 @@ NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedWs2811, NeoEsp32RmtInverte
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedWs2812x, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 300000)
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedWs2805, NeoEsp32RmtInvertedSpeedBase, 300, 790, 790, 300, 300000)
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedSk6812, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 80000)
-NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1814, NeoEsp32RmtSpeedBase, 360, 890, 720, 530, 200000)
-NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1829, NeoEsp32RmtSpeedBase, 300, 900, 800, 400, 200000)
-NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1914, NeoEsp32RmtSpeedBase, 360, 890, 720, 530, 200000)
+NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1814, NeoEsp32RmtInvertedSpeedBase, 360, 890, 720, 530, 200000)
+NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1829, NeoEsp32RmtInvertedSpeedBase, 300, 900, 800, 400, 200000)
+NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedTm1914, NeoEsp32RmtInvertedSpeedBase, 360, 890, 720, 530, 200000)
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeed800Kbps, NeoEsp32RmtInvertedSpeedBase, 400, 850, 800, 450, 50000)
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeed400Kbps, NeoEsp32RmtInvertedSpeedBase, 800, 1700, 1600, 900, 50000)
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtInvertedSpeedApa106, NeoEsp32RmtInvertedSpeedBase, 350, 1350, 1350, 350, 50000)
@@ -432,27 +432,6 @@ class NeoEsp32RmtChannel7 : public NeoEsp32RmtChannelBase
 {
 public:
     NeoEsp32RmtChannel7() : _channelIndex(7) {}
-    const uint8_t _channelIndex;
-};
-
-class NeoEsp32RmtChannel5 : public NeoEsp32RmtChannelBase
-{
-public:
-    NeoEsp32RmtChannel5() { _channelIndex = 5; }
-    const uint8_t _channelIndex;
-};
-
-class NeoEsp32RmtChannel6 : public NeoEsp32RmtChannelBase
-{
-public:
-    NeoEsp32RmtChannel6() { _channelIndex = 6; }
-    const uint8_t _channelIndex;
-};
-
-class NeoEsp32RmtChannel7 : public NeoEsp32RmtChannelBase
-{
-public:
-    NeoEsp32RmtChannel7() { _channelIndex = 7; }
     const uint8_t _channelIndex;
 };
 
@@ -561,7 +540,7 @@ public:
         }
 
         rmt_tx_event_callbacks_t callbacks = {};
-        callbacks.on_trans_done = NeoEsp32RmtTransDoneCallbackWrapper::callback<NeoEsp32RmtMethodBase<T_SPEED, T_CHANNEL>>;
+        callbacks.on_trans_done = &NeoEsp32RmtTransDoneCallbackWrapper::template callback<NeoEsp32RmtMethodBase<T_SPEED, T_CHANNEL>>;
         err = rmt_tx_register_event_callbacks(_channel.getHandle(), &callbacks, this);
         if (err != ESP_OK)
         {
