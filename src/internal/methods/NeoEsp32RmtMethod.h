@@ -304,6 +304,9 @@ class NeoEsp32RmtSpeedBase
 {
 public:
     const static uint8_t RmtClockDivider = 2;
+    const static uint32_t RmtCpu = 80000000L;
+    const static uint32_t NsPerSecond = 1000000000L;
+    const static uint32_t NsPerRmtTick = (NsPerSecond / (RmtCpu / RmtClockDivider));
 
     inline constexpr static uint32_t FromNs(uint32_t ns)
     {
@@ -317,11 +320,6 @@ public:
 
     const static bool Inverted = false;
     static constexpr uint32_t ResolutionHz = RmtCpu / RmtClockDivider;
-
-protected:
-    const static uint32_t RmtCpu = 80000000L;
-    const static uint32_t NsPerSecond = 1000000000L;
-    const static uint32_t NsPerRmtTick = (NsPerSecond / (RmtCpu / RmtClockDivider));
 };
 
 class NeoEsp32RmtInvertedSpeedBase : public NeoEsp32RmtSpeedBase
