@@ -334,11 +334,6 @@ class className : public baseClass \
 public: \
     const static uint32_t Bit0 = BitTiming(bit0High, bit0Low); \
     const static uint32_t Bit1 = BitTiming(bit1High, bit1Low); \
-    const static uint32_t ResetDuration = FromNs(resetNs); \
-    const static uint16_t Bit0High = bit0High; \
-    const static uint16_t Bit0Low = bit0Low; \
-    const static uint16_t Bit1High = bit1High; \
-    const static uint16_t Bit1Low = bit1Low; \
 };
 
 NEOPIXELBUS_DECLARE_SPEED_NEW(NeoEsp32RmtSpeedWs2811, NeoEsp32RmtSpeedBase, 300, 950, 900, 350, 300000)
@@ -455,6 +450,7 @@ public:
         _channel(),
         _encoder(nullptr),
         _isTransmitting(false),
+        _initialized(false),
         _dataEditing(nullptr),
         _dataSending(nullptr)
     {
@@ -466,6 +462,7 @@ public:
         _channel(channel),
         _encoder(nullptr),
         _isTransmitting(false),
+        _initialized(false),
         _dataEditing(nullptr),
         _dataSending(nullptr)
     {
@@ -557,12 +554,13 @@ public:
 
         ESP_ERROR_CHECK(rmt_enable(_channel.getHandle()));
 
+        _initialized = true;
         return true;
     }
 
     void Update(bool maintainBufferConsistency)
     {
-        if (_isTransmitting)
+        if (_isTransmitting || !_initialized)
         {
             return;
         }
@@ -601,6 +599,11 @@ public:
         _isTransmitting = false;
     }
 
+    // Note: _isTransmitting is written in ISR (on the same CPU core) and read in
+    // main thread. The volatile qualifier provides visibility, but on ESP-IDF
+    // the callback runs in a critical section providing sufficient ordering.
+    // For cross-core access or stronger guarantees, atomic operations would be needed.
+
 private:
     struct NeoEsp32RmtTransDoneCallbackWrapper
     {
@@ -620,6 +623,7 @@ private:
     T_CHANNEL _channel;
     rmt_encoder_handle_t _encoder;
     volatile bool _isTransmitting;
+    bool _initialized;
     uint8_t*  _dataEditing;
     uint8_t*  _dataSending;
 };
