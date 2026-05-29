@@ -316,12 +316,12 @@ public:
     }
 
     const static bool Inverted = false;
+    static constexpr uint32_t ResolutionHz = RmtCpu / RmtClockDivider;
 
 protected:
     const static uint32_t RmtCpu = 80000000L;
     const static uint32_t NsPerSecond = 1000000000L;
-    const static uint32_t RmtTicksPerSecond = (RmtCpu / RmtClockDivider);
-    const static uint32_t NsPerRmtTick = (NsPerSecond / RmtTicksPerSecond);
+    const static uint32_t NsPerRmtTick = (NsPerSecond / (RmtCpu / RmtClockDivider));
 };
 
 class NeoEsp32RmtInvertedSpeedBase : public NeoEsp32RmtSpeedBase
@@ -382,28 +382,28 @@ protected:
 class NeoEsp32RmtChannel0 : public NeoEsp32RmtChannelBase
 {
 public:
-    NeoEsp32RmtChannel0() { _channelIndex = 0; }
+    NeoEsp32RmtChannel0() : _channelIndex(0) {}
     const uint8_t _channelIndex;
 };
 
 class NeoEsp32RmtChannel1 : public NeoEsp32RmtChannelBase
 {
 public:
-    NeoEsp32RmtChannel1() { _channelIndex = 1; }
+    NeoEsp32RmtChannel1() : _channelIndex(1) {}
     const uint8_t _channelIndex;
 };
 
 class NeoEsp32RmtChannel2 : public NeoEsp32RmtChannelBase
 {
 public:
-    NeoEsp32RmtChannel2() { _channelIndex = 2; }
+    NeoEsp32RmtChannel2() : _channelIndex(2) {}
     const uint8_t _channelIndex;
 };
 
 class NeoEsp32RmtChannel3 : public NeoEsp32RmtChannelBase
 {
 public:
-    NeoEsp32RmtChannel3() { _channelIndex = 3; }
+    NeoEsp32RmtChannel3() : _channelIndex(3) {}
     const uint8_t _channelIndex;
 };
 
@@ -412,7 +412,28 @@ public:
 class NeoEsp32RmtChannel4 : public NeoEsp32RmtChannelBase
 {
 public:
-    NeoEsp32RmtChannel4() { _channelIndex = 4; }
+    NeoEsp32RmtChannel4() : _channelIndex(4) {}
+    const uint8_t _channelIndex;
+};
+
+class NeoEsp32RmtChannel5 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel5() : _channelIndex(5) {}
+    const uint8_t _channelIndex;
+};
+
+class NeoEsp32RmtChannel6 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel6() : _channelIndex(6) {}
+    const uint8_t _channelIndex;
+};
+
+class NeoEsp32RmtChannel7 : public NeoEsp32RmtChannelBase
+{
+public:
+    NeoEsp32RmtChannel7() : _channelIndex(7) {}
     const uint8_t _channelIndex;
 };
 
@@ -510,11 +531,9 @@ public:
 
         rmt_tx_channel_config_t tx_config = {};
         tx_config.gpio_num = static_cast<gpio_num_t>(_pin);
-        tx_config.clk_div = T_SPEED::RmtClockDivider;
-        tx_config.resolution_hz = T_SPEED::RmtTicksPerSecond;
+        tx_config.resolution_hz = T_SPEED::ResolutionHz;
         tx_config.mem_block_symbols = 64;
         tx_config.trans_queue_depth = 1;
-        tx_config.idle_level = T_SPEED::Inverted ? RMT_IDLE_LEVEL_HIGH : RMT_IDLE_LEVEL_LOW;
 
         rmt_channel_handle_t handle;
         esp_err_t err = rmt_new_tx_channel(&tx_config, &handle);
@@ -531,7 +550,7 @@ public:
         rmt_bytes_encoder_config_t byte_encoder_config = {};
         byte_encoder_config.bit0.val = T_SPEED::Bit0;
         byte_encoder_config.bit1.val = T_SPEED::Bit1;
-        err = rmt_new_bytes_encoder(handle, &byte_encoder_config, &_encoder);
+        err = rmt_new_bytes_encoder(&byte_encoder_config, &_encoder);
         if (err != ESP_OK)
         {
             ESP_ERROR_CHECK(rmt_del_channel(_channel.getHandle()));
@@ -607,7 +626,7 @@ public:
 
 private:
     template<typename T>
-    static bool IRAM_ATTR NeoEsp32RmtTransDoneCallback(rmt_channel_handle_t channel, const rmt_tx_done_event_data_t* edata, void* user_data)
+    static bool IRAM_ATTR NeoEsp32RmtTransDoneCallback(rmt_channel_t* channel, const rmt_tx_done_event_data_t* edata, void* user_data)
     {
         (void)channel;
         (void)edata;
