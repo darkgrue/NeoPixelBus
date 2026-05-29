@@ -29,7 +29,7 @@ License along with NeoPixel.  If not, see
 
 #include <Arduino.h>
 
-#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32H2) && !NEOPIXELBUS_RMT_NEW_API
+#if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(CONFIG_IDF_TARGET_ESP32H2) && defined(ESP_IDF_VERSION_MAJOR) && ESP_IDF_VERSION_MAJOR < 5
 
 #include "../NeoSettings.h"
 #include "../NeoBusChannel.h"
