@@ -55,10 +55,6 @@ extern "C"
 #define NEOPIXELBUS_RMT_INT_FLAGS (ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1)
 #endif
 
-#ifndef NEOPIXELBUS_RMT_MEM_BLOCK_SYMBOLS
-#define NEOPIXELBUS_RMT_MEM_BLOCK_SYMBOLS 64
-#endif
-
 class NeoEsp32RmtSpeed
 {
 public:
@@ -622,7 +618,7 @@ public:
         config.rmt_mode = RMT_MODE_TX;
         config.channel = _channel.RmtChannelNumber;
         config.gpio_num = static_cast<gpio_num_t>(_pin);
-        config.mem_block_num = (NEOPIXELBUS_RMT_MEM_BLOCK_SYMBOLS + 63) / 64;
+        config.mem_block_num = 1;
         config.tx_config.loop_en = false;
         
         config.tx_config.idle_output_en = true;
